@@ -115,7 +115,14 @@ def classify_documents(docs, word_given_category_probabilities, category_probabi
 
 
 def accuracy(true_labels, guessed_labels):
-    return None
+    total_count = len(true_labels)
+
+    missed = 0
+    for true_label, guessed_label in zip(true_labels, guessed_labels):
+        if true_label != guessed_label:
+            missed += 1
+
+    return (total_count-missed) / total_count
 
 
 '''
