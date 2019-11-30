@@ -80,8 +80,8 @@ def score_doc_label(document, label, word_given_category_probabilities, category
     category_probability = category_probabilities.get(label, 0)
     if category_probability == 0:
         return -math.inf
-
     score = np.log(category_probability)
+
     for word in document:
         word_prob = word_given_category_probabilities[label].get(word, 0)
         if word_prob == 0:
@@ -96,7 +96,6 @@ def classify_naive_bayes(document, word_given_category_probabilities, category_p
     for category in category_probabilities.keys():
         score = score_doc_label(document, category, word_given_category_probabilities, category_probabilities)
         class_and_score.update({category: score})
-
     class_label = max(class_and_score, key=class_and_score.get)
     return class_label, class_and_score[class_label]
 
