@@ -201,6 +201,12 @@ accuracy = accuracy(true_doc_labels, guessed__doc_labels)
 list_of_incorrect_class = misclassified_documents(true_doc_labels, guessed__doc_labels)
 list_of_correct_class = correct_classified_documents(true_doc_labels, guessed__doc_labels)
 
+print('===============================LIST OF TRUE CLASS DOCUMENTS===============================')
+for lbl in true_doc_labels.keys():
+    for doc in true_doc_labels[lbl]:
+        print({lbl: doc})
+        print()
+
 print('===============================LIST OF CLASSIFIED DOCUMENTS===============================')
 for lbl in guessed__doc_labels.keys():
     for doc in guessed__doc_labels[lbl]:
