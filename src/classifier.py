@@ -91,12 +91,12 @@ def score_doc_label(document, label, word_given_category_probabilities, category
     return score
 
 
-def classify_nb(document, word_given_category_probabilities, category_probabilities):
-    classification_and_prob = dict()
+def classify_naive_bayes(document, word_given_category_probabilities, category_probabilities):
+    class_and_prob = dict()
     for category in category_probabilities.keys():
         score = score_doc_label(document, category, word_given_category_probabilities, category_probabilities)
-        classification_and_prob.update({category: score})
-    return max(classification_and_prob, key=classification_and_prob.get)
+        class_and_prob.update({category: score})
+    return max(class_and_prob, key=class_and_prob.get)
 
 
 '''
@@ -107,7 +107,11 @@ def classify_nb(document, word_given_category_probabilities, category_probabilit
 
 
 def classify_documents(docs, word_given_category_probabilities, category_probabilities):
-    return None
+    class_and_doc = dict()
+    for doc in docs:
+        classification = classify_naive_bayes(doc, word_given_category_probabilities, category_probabilities)
+        class_and_doc.update({classification: doc})
+    return class_and_doc
 
 
 def accuracy(true_labels, guessed_labels):
