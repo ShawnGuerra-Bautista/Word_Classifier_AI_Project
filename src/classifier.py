@@ -78,12 +78,14 @@ def train_naive_bayes(documents, labels):
 
 def score_doc_label(document, label, word_given_category_probabilities, category_probabilities):
     category_probability = category_probabilities.get(label, 0)
+    # If the category hasn't been seen before the probability should be 0. So log(0) = -infinity
     if category_probability == 0:
         return -math.inf
     score = np.log(category_probability)
 
     for word in document:
         word_prob = word_given_category_probabilities[label].get(word, 0)
+        # If the word hasn't been seen before the probability should be 0. So log(0) = -infinity
         if word_prob == 0:
             return -math.inf
         else:
@@ -97,6 +99,7 @@ def classify_naive_bayes(document, word_given_category_probabilities, category_p
         score = score_doc_label(document, category, word_given_category_probabilities, category_probabilities)
         class_and_score.update({category: score})
     class_label = max(class_and_score, key=class_and_score.get)
+    # Outputs the category and the score towards that category
     return class_label, class_and_score[class_label]
 
 
