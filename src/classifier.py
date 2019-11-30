@@ -77,11 +77,11 @@ def train_naive_bayes(documents, labels):
 
 
 def score_doc_label(document, label, word_given_category_probabilities, category_probabilities):
-    cat_prob = category_probabilities.get(label, 0)
-    if cat_prob == 0:
+    category_probability = category_probabilities.get(label, 0)
+    if category_probability == 0:
         return -math.inf
 
-    score = np.log(cat_prob)
+    score = np.log(category_probability)
     for word in document:
         word_prob = word_given_category_probabilities[label].get(word, 0)
         if word_prob == 0:
@@ -92,11 +92,13 @@ def score_doc_label(document, label, word_given_category_probabilities, category
 
 
 def classify_naive_bayes(document, word_given_category_probabilities, category_probabilities):
-    class_and_prob = dict()
+    class_and_score = dict()
     for category in category_probabilities.keys():
         score = score_doc_label(document, category, word_given_category_probabilities, category_probabilities)
-        class_and_prob.update({category: score})
-    return max(class_and_prob, key=class_and_prob.get)
+        class_and_score.update({category: score})
+
+    class_label = max(class_and_score, key=class_and_score.get)
+    return class_label, class_and_score[class_label]
 
 
 '''
@@ -106,32 +108,63 @@ def classify_naive_bayes(document, word_given_category_probabilities, category_p
 '''
 
 
-def classify_documents(docs, word_given_category_probabilities, category_probabilities):
+def classify_documents(documents, word_given_category_probabilities, category_probabilities):
     class_and_doc = dict()
-    for doc in docs:
-        classification = classify_naive_bayes(doc, word_given_category_probabilities, category_probabilities)
-        class_and_doc.update({classification: doc})
+    for document in documents:
+        classification, class_and_score = classify_naive_bayes(document, word_given_category_probabilities,
+                                                               category_probabilities)
+        class_and_doc.setdefault(classification, []).append(document)
     return class_and_doc
 
 
 def accuracy(true_labels, guessed_labels):
-    total_count = len(true_labels)
-
+    total_count = 0
     missed = 0
-    for true_label, guessed_label in zip(true_labels, guessed_labels):
-        if true_label != guessed_label:
-            missed += 1
-
+    for label in true_labels.keys():
+        total_count += len(true_labels[label])
+        true_label_docs = true_labels[label]
+        for guessed_label_doc in guessed_labels[label]:
+            if guessed_label_doc not in true_label_docs:
+                missed += 1
     return (total_count-missed) / total_count
 
 
 '''
-    Testing the Counter method
+    Task 4:
+    Find the misclassified documents
+    Comment why they were hard to classify
+    
+    The accuracy of this classifier is 0.6168694922366764.
+    The main reason the classifier had some difficulties to classify some documents is simply because
+        the machine learning algorithm (Naive Bayes Classifier) did not recognize some words that were
+        in the documents it had to evaluate. In other words, the AI will not classify properly if it
+        trained with some list of words, but then evaluates some document with words it did not trained on.
+        That's because the AI didn't calculate any probability for words given a class it did not see before.
+        Because of that, the probability that of an unknown word in its vocabulary will always result in 0, or
+        log(0) = -infinity.
+        And, since Naive Bayes assumes that all words are independent, the product of all words in the document that
+        contains an unknown word in its vocabulary will result in 0. Hence, the document will be 
+        classified "arbitrarily" depending on implementation. In my case, the default category will always be the 
+        "first" category which is 'neg'. 
+        Since the score of 0 or log(0) will be assigned to the document for all categories, the program will simply 
+        pick the "first" category it encountered (i.e. "class_label = max(class_and_score, key=class_and_score.get)").
+        
+    The other reason the classifier has come difficulties is because, while the review might be negative, there were
+        some positive words in the document. For example, "This is a good charger-quick and portable. But the battery
+        life of the battery sucks!" is a negative review, but was classified as positive. There are both "pos" and "neg"
+        words, so the classifier will obviously have some trouble classifying this document correctly.  
 '''
 
-example_documents = ['the first document'.split(), 'the second document'.split()]
-freq1 = Counter(w for doc in example_documents for w in doc)
-print(freq1)
+
+def misclassified_documents(true_labels, guessed_labels):
+    list_of_misclassified_doc = dict()
+    for label in true_labels.keys():
+        true_label_docs = true_labels[label]
+        for guessed_label_doc in guessed_labels[label]:
+            if guessed_label_doc not in true_label_docs:
+                list_of_misclassified_doc.setdefault(label, []).append(guessed_label_doc)
+    return list_of_misclassified_doc
+
 
 '''
     Split the list into one for training and one for evaluation
@@ -145,7 +178,22 @@ train_labels = all_labels[:split_point]
 eval_docs = all_docs[split_point:]
 eval_labels = all_labels[split_point:]
 
-count = Counter({'red': 1, 'blue': 2})
-count.update(Counter({'red': 1}))
-c = dict(count)
-print(count)
+word_cat_prob, cat_prob = train_naive_bayes(train_docs, train_labels)
+guessed__doc_labels = classify_documents(eval_docs, word_cat_prob, cat_prob)
+
+true_doc_labels = dict()
+for cat, doc in zip(eval_labels, eval_docs):
+    true_doc_labels.setdefault(cat, []).append(doc)
+
+accuracy = accuracy(true_doc_labels, guessed__doc_labels)
+list_of_incorrect_class = misclassified_documents(true_doc_labels, guessed__doc_labels)
+
+print('===============================LIST OF MISCLASSIFIED DOCUMENTS===============================')
+for lbl in list_of_incorrect_class.keys():
+    for doc in list_of_incorrect_class[lbl]:
+        topic_label, score_label = classify_naive_bayes(doc, word_cat_prob, cat_prob)
+        print({lbl: doc})
+        print({topic_label: score_label})
+        print()
+
+print('The accuracy of the AI is: ' + str(accuracy))
