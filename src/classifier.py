@@ -61,7 +61,7 @@ def train_naive_bayes(documents, labels):
 
     # Computes the probability of the categories P(c_i)
     category_probabilities = dict()
-    category_freq = Counter(category for category in all_labels)
+    category_freq = Counter(category for category in labels)
     for category in category_freq:
         category_probabilities.update({category: (category_freq[category] / sum(category_freq.values()))})
 
@@ -133,7 +133,7 @@ def accuracy(true_labels, guessed_labels):
     Find the misclassified documents
     Comment why they were hard to classify
     
-    The accuracy of this classifier is 0.6168694922366764.
+    The accuracy of this classifier is 0.6160302140159463.
     The main reason the classifier had some difficulties to classify some documents is simply because
         the machine learning algorithm (Naive Bayes Classifier) did not recognize some words that were
         in the documents it had to evaluate. In other words, the AI will not classify properly if it
