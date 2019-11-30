@@ -183,6 +183,12 @@ eval_labels = all_labels[split_point:]
 word_cat_prob, cat_prob = train_naive_bayes(train_docs, train_labels)
 guessed__doc_labels = classify_documents(eval_docs, word_cat_prob, cat_prob)
 
+print('===============================LIST OF CLASSIFIED DOCUMENTS===============================')
+for lbl in guessed__doc_labels.keys():
+    for doc in guessed__doc_labels[lbl]:
+        print({lbl: doc})
+        print()
+
 true_doc_labels = dict()
 for cat, doc in zip(eval_labels, eval_docs):
     true_doc_labels.setdefault(cat, []).append(doc)
