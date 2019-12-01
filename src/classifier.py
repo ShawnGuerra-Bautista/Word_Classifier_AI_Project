@@ -111,24 +111,22 @@ def classify_naive_bayes(document, word_given_category_probabilities, category_p
 
 
 def classify_documents(documents, word_given_category_probabilities, category_probabilities):
-    class_and_doc = dict()
+    doc_classification = []
     for document in documents:
         classification, class_and_score = classify_naive_bayes(document, word_given_category_probabilities,
                                                                category_probabilities)
-        class_and_doc.setdefault(classification, []).append(document)
-    return class_and_doc
+        doc_classification.append(classification)
+    return doc_classification
 
 
 def accuracy(true_labels, guessed_labels):
-    total_count = 0
+    total_count = len(true_labels)
     missed = 0
-    for label in true_labels.keys():
-        total_count += len(true_labels[label])
-        true_label_docs = true_labels[label]
-        for guessed_label_doc in guessed_labels[label]:
-            if guessed_label_doc not in true_label_docs:
-                missed += 1
-    return (total_count-missed) / total_count
+    for true_label, guessed_label in zip(true_labels, guessed_labels):
+        if true_label != guessed_label:
+            missed += 1
+
+    return (total_count - missed) / total_count
 
 
 '''
@@ -158,24 +156,24 @@ def accuracy(true_labels, guessed_labels):
 '''
 
 
-def correct_classified_documents(true_labels, guessed_labels):
-    list_of_correct_classified_doc = dict()
-    for label in true_labels.keys():
-        true_label_docs = true_labels[label]
-        for guessed_label_doc in guessed_labels[label]:
-            if guessed_label_doc in true_label_docs:
-                list_of_correct_classified_doc.setdefault(label, []).append(guessed_label_doc)
-    return list_of_correct_classified_doc
+def correct_classified_documents_with_label(true_labels, guessed_labels, documents):
+    list_of_correct_classified_doc = []
+    list_of_labels = []
+    for true_label, guessed_label, document in zip(true_labels, guessed_labels, documents):
+        if true_label == guessed_label:
+            list_of_correct_classified_doc.append(document)
+            list_of_labels.append(true_label)
+    return list_of_correct_classified_doc, list_of_labels
 
 
-def misclassified_documents(true_labels, guessed_labels):
-    list_of_misclassified_doc = dict()
-    for label in true_labels.keys():
-        true_label_docs = true_labels[label]
-        for guessed_label_doc in guessed_labels[label]:
-            if guessed_label_doc not in true_label_docs:
-                list_of_misclassified_doc.setdefault(label, []).append(guessed_label_doc)
-    return list_of_misclassified_doc
+def misclassified_documents_with_label(true_labels, guessed_labels, documents):
+    list_of_misclassified_doc = []
+    list_of_labels = []
+    for true_label, guessed_label, document in zip(true_labels, guessed_labels, documents):
+        if true_label != guessed_label:
+            list_of_misclassified_doc.append(document)
+            list_of_labels.append(guessed_label)
+    return list_of_misclassified_doc, list_of_labels
 
 
 '''
@@ -191,42 +189,36 @@ eval_docs = all_docs[split_point:]
 eval_labels = all_labels[split_point:]
 
 word_cat_prob, cat_prob = train_naive_bayes(train_docs, train_labels)
-guessed__doc_labels = classify_documents(eval_docs, word_cat_prob, cat_prob)
+guessed_doc_labels = classify_documents(eval_docs, word_cat_prob, cat_prob)
 
-true_doc_labels = dict()
-for cat, doc in zip(eval_labels, eval_docs):
-    true_doc_labels.setdefault(cat, []).append(doc)
+accuracy = accuracy(eval_labels, guessed_doc_labels)
 
-accuracy = accuracy(true_doc_labels, guessed__doc_labels)
-list_of_incorrect_class = misclassified_documents(true_doc_labels, guessed__doc_labels)
-list_of_correct_class = correct_classified_documents(true_doc_labels, guessed__doc_labels)
+list_of_incorrect_classification, list_of_incorrect_label = misclassified_documents_with_label(eval_labels,
+                                                                                               guessed_doc_labels,
+                                                                                               eval_docs)
+list_of_correct_classification, list_of_correct_label = correct_classified_documents_with_label(eval_labels,
+                                                                                                guessed_doc_labels,
+                                                                                                eval_docs)
 
-print('===============================LIST OF TRUE CLASS DOCUMENTS===============================')
-for lbl in true_doc_labels.keys():
-    for doc in true_doc_labels[lbl]:
-        print({lbl: doc})
-        print()
+print('=============================LIST OF LABELS (TRUE VS. GUESSED)============================')
+for true_lb, guessed_lb in zip(eval_labels, guessed_doc_labels):
+    print({true_lb: guessed_lb})
 
-print('===============================LIST OF CLASSIFIED DOCUMENTS===============================')
-for lbl in guessed__doc_labels.keys():
-    for doc in guessed__doc_labels[lbl]:
-        print({lbl: doc})
-        print()
+print('=======================LIST OF DOCS GIVEN LABELS (TRUE VS. GUESSED)=======================')
+for true_lb, guessed_lb, doc in zip(eval_labels, guessed_doc_labels, eval_docs):
+    print({true_lb: guessed_lb}, doc)
+    print()
 
 print('===========================LIST OF CORRECT CLASSIFIED DOCUMENTS===========================')
-for lbl in list_of_correct_class.keys():
-    for doc in list_of_correct_class[lbl]:
-        topic_label, score_label = classify_naive_bayes(doc, word_cat_prob, cat_prob)
-        print({lbl: doc})
-        print({topic_label: score_label})
-        print()
+for doc, lbl in zip(list_of_correct_classification, list_of_correct_label):
+    topic, score = classify_naive_bayes(doc, word_cat_prob, cat_prob)
+    print({topic: score}, {lbl: doc})
+    print()
 
 print('=============================LIST OF MISCLASSIFIED DOCUMENTS=============================')
-for lbl in list_of_incorrect_class.keys():
-    for doc in list_of_incorrect_class[lbl]:
-        topic_label, score_label = classify_naive_bayes(doc, word_cat_prob, cat_prob)
-        print({lbl: doc})
-        print({topic_label: score_label})
-        print()
+for doc, lbl in zip(list_of_incorrect_classification, list_of_incorrect_label):
+    topic, score = classify_naive_bayes(doc, word_cat_prob, cat_prob)
+    print({topic: score}, {lbl: doc})
+    print()
 
 print('The accuracy of the AI is: ' + str(accuracy))
