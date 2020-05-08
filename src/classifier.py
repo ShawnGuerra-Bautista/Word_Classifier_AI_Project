@@ -77,19 +77,23 @@ def train_naive_bayes(documents, labels):
 
 
 def score_doc_label(document, label, word_given_category_probabilities, category_probabilities):
-    category_probability = category_probabilities.get(label, 0)
+    category_probability = category_probabilities.get(label, 1)
     # If the category hasn't been seen before the probability should be 0. So log(0) = -infinity
+    # if category_probability == 0:
+    #     return -math.inf
     if category_probability == 0:
-        return -math.inf
+        category_probability = 1
+
     score = np.log(category_probability)
 
     for word in document:
         word_prob = word_given_category_probabilities[label].get(word, 0)
         # If the word hasn't been seen before the probability should be 0. So log(0) = -infinity
+        # if word_prob == 0:
+        #      return -math.inf
         if word_prob == 0:
-            return -math.inf
-        else:
-            score += np.log(word_prob)
+            word_prob = 1
+        score += np.log(word_prob)
     return score
 
 
@@ -180,18 +184,21 @@ def misclassified_documents_with_label(true_labels, guessed_labels, documents):
     Split the list into one for training and one for evaluation
 '''
 
-all_docs, all_labels = read_documents('all_sentiment_shuffled.txt')
+# all_docs, all_labels = read_documents('all_sentiment_shuffled.txt')
+#
+# split_point = int(0.8 * len(all_docs))
+# train_docs = all_docs[:split_point]
+# train_labels = all_labels[:split_point]
+# eval_docs = all_docs[split_point:]
+# eval_labels = all_labels[split_point:]
 
-split_point = int(0.8 * len(all_docs))
-train_docs = all_docs[:split_point]
-train_labels = all_labels[:split_point]
-eval_docs = all_docs[split_point:]
-eval_labels = all_labels[split_point:]
+train_docs, train_labels = read_documents('all_sentiment_shuffled.txt')
+eval_docs, eval_labels = read_documents('Sample1 (remaster).txt')
 
 word_cat_prob, cat_prob = train_naive_bayes(train_docs, train_labels)
 guessed_doc_labels = classify_documents(eval_docs, word_cat_prob, cat_prob)
 
-accuracy = accuracy(eval_labels, guessed_doc_labels)
+acc = accuracy(eval_labels, guessed_doc_labels)
 
 list_of_incorrect_classification, list_of_incorrect_label = misclassified_documents_with_label(eval_labels,
                                                                                                guessed_doc_labels,
@@ -200,25 +207,41 @@ list_of_correct_classification, list_of_correct_label = correct_classified_docum
                                                                                                 guessed_doc_labels,
                                                                                                 eval_docs)
 
-print('=============================LIST OF LABELS (TRUE VS. GUESSED)============================')
+file_trained_set = open("data/listOfTrainedData.txt", "w")
+file_trained_set.write("Format: " + str({"Probability": "Doc/Category"}) + "\n\n")
+for cat in cat_prob:
+    file_trained_set.write(str("=====NEW SECTION======") + "\n")
+    file_trained_set.write(str({cat: cat_prob[cat]}) + "\n\n")
+    for wrd in word_cat_prob[cat]:
+        file_trained_set.write(str({wrd: word_cat_prob[cat][wrd]}) + "\n")
+    file_trained_set.write("\n")
+file_trained_set.close()
+
+file_list_of_labels = open("data/listOfLabels.txt", "w")
+file_list_of_labels.write("Format: " + str({"True": "Guessed"}) + "\n\n")
 for true_lb, guessed_lb in zip(eval_labels, guessed_doc_labels):
-    print({true_lb: guessed_lb})
+    file_list_of_labels.write(str({true_lb: guessed_lb}) + "\n")
+file_list_of_labels.write('The accuracy of the AI is: ' + str(acc))
+file_list_of_labels.close()
 
-print('=======================LIST OF DOCS GIVEN LABELS (TRUE VS. GUESSED)=======================')
+file_list_of_doc_labels = open("data/listOfDocAndLabels.txt", "w")
+file_list_of_doc_labels.write("Format: " + str({"True": "(Guessed, Score)"}) + " doc\n\n")
 for true_lb, guessed_lb, doc in zip(eval_labels, guessed_doc_labels, eval_docs):
-    print({true_lb: guessed_lb}, doc)
-    print()
+    topic_and_score = classify_naive_bayes(doc, word_cat_prob, cat_prob)
+    file_list_of_doc_labels.write(str({true_lb: topic_and_score}) + str(doc) + "\n\n")
+file_list_of_doc_labels.write('The accuracy of the AI is: ' + str(acc))
+file_list_of_doc_labels.close()
 
-print('===========================LIST OF CORRECT CLASSIFIED DOCUMENTS===========================')
+file_list_of_correct_doc = open("data/listOfCorrectDoc.txt", "w")
+file_list_of_correct_doc.write("Format: " + str({"Guessed": "Score"}) + " doc\n\n")
 for doc, lbl in zip(list_of_correct_classification, list_of_correct_label):
     topic, score = classify_naive_bayes(doc, word_cat_prob, cat_prob)
-    print({topic: score}, {lbl: doc})
-    print()
+    file_list_of_correct_doc.write(str({topic: score}) + str(doc) + "\n\n")
+file_list_of_correct_doc.close()
 
-print('=============================LIST OF MISCLASSIFIED DOCUMENTS=============================')
+file_list_of_incorrect_doc = open("data/listOfIncorrectDoc.txt", "w")
+file_list_of_incorrect_doc.write("Format: " + str({"Guessed": "Score"}) + " doc\n\n")
 for doc, lbl in zip(list_of_incorrect_classification, list_of_incorrect_label):
     topic, score = classify_naive_bayes(doc, word_cat_prob, cat_prob)
-    print({topic: score}, {lbl: doc})
-    print()
-
-print('The accuracy of the AI is: ' + str(accuracy))
+    file_list_of_incorrect_doc.write(str({topic: score}) + str(doc) + "\n\n")
+file_list_of_incorrect_doc.close()
